@@ -75,9 +75,10 @@ def collect_linear_inputs(model, batches, max_batches: int = 16):
 
         return hook
 
-    for name, module in model.named_modules():
-        if isinstance(module, torch.nn.Linear):
-            hooks.append(module.register_forward_hook(make_hook(name)))
+    from models import iter_quantizable_layers
+
+    for name, module in iter_quantizable_layers(model):
+        hooks.append(module.register_forward_hook(make_hook(name)))
 
     with torch.no_grad():
         for batch in batches[:max_batches]:

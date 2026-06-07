@@ -11,6 +11,8 @@ def evaluate_perplexity(model, batches) -> dict[str, float]:
     losses = []
     for batch in batches:
         labels = batch["input_ids"].clone()
+        if "attention_mask" in batch:
+            labels = labels.masked_fill(batch["attention_mask"] == 0, -100)
         output = model(**batch, labels=labels)
         losses.append(float(output.loss.detach().cpu()))
     mean_loss = sum(losses) / max(len(losses), 1)

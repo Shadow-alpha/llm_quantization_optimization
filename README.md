@@ -69,6 +69,15 @@ python code/download_dataset.py --dataset Salesforce/wikitext --config wikitext-
 
 数据集下载脚本不会调用 `datasets.load_dataset` 解析脚本，而是直接用 `huggingface_hub` 下载 dataset repo 中的 parquet 文件；实验读取本地数据时用 pandas/pyarrow 解析 parquet。
 
+## 检查模型结构
+
+运行下面的命令可以打印模型中会被量化的层。对 GPT-2 系列，代码会覆盖 `nn.Linear` 以及 HuggingFace `Conv1D` 这类带二维 `weight` 的线性映射层。
+
+```powershell
+python code/inspect_model.py --model-path models/distilgpt2
+python code/inspect_model.py --model-path models/distilgpt2 --all-layers
+```
+
 ## 运行不同量化方法
 
 单个方法统一通过 `code/main.py` 运行，结果会保存到 `results/tables/`。

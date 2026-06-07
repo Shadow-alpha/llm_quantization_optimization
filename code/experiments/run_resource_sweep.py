@@ -37,22 +37,20 @@ def parse_budget_ratios(raw: str) -> list[float]:
 
 
 def linear_weight_memory_mb(model, bits: int = 16) -> float:
-    import torch
+    from models import get_layer_weight, iter_quantizable_layers
 
     total_bits = 0
-    for module in model.modules():
-        if isinstance(module, torch.nn.Linear):
-            total_bits += module.weight.numel() * bits
+    for _name, module in iter_quantizable_layers(model):
+        total_bits += get_layer_weight(module).numel() * bits
     return total_bits / 8 / 1024 / 1024
 
 
 def assignment_memory_mb(model, assignment: dict[str, int]) -> float:
-    import torch
+    from models import get_layer_weight, iter_quantizable_layers
 
     total_bits = 0
-    for name, module in model.named_modules():
-        if isinstance(module, torch.nn.Linear):
-            total_bits += module.weight.numel() * assignment.get(name, 16)
+    for name, module in iter_quantizable_layers(model):
+        total_bits += get_layer_weight(module).numel() * assignment.get(name, 16)
     return total_bits / 8 / 1024 / 1024
 
 

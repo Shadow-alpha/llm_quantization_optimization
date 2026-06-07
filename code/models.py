@@ -23,10 +23,27 @@ def load_causal_lm(model_name_or_path: str, device: str = "cpu"):
     return model, tokenizer
 
 
-def iter_linear_layers(model):
+def is_quantizable_layer(module) -> bool:
+    weight = getattr(module, "weight", None)
+    return isinstance(weight, torch.nn.Parameter) and weight.ndim == 2
+
+
+def get_layer_weight(module) -> torch.Tensor:
+    return module.weight.data
+
+
+def set_layer_weight(module, weight: torch.Tensor) -> None:
+    module.weight.data.copy_(weight.to(module.weight.dtype))
+
+
+def iter_quantizable_layers(model):
     for name, module in model.named_modules():
-        if isinstance(module, torch.nn.Linear):
+        if is_quantizable_layer(module):
             yield name, module
+
+
+def iter_linear_layers(model):
+    yield from iter_quantizable_layers(model)
 
 
 def estimate_parameter_memory_mb(model, bit_overrides: dict[str, float] | None = None) -> float:
@@ -40,7 +57,7 @@ def estimate_parameter_memory_mb(model, bit_overrides: dict[str, float] | None =
 
 
 def linear_weight_bit_overrides(model, bits: float) -> dict[str, float]:
-    return {f"{name}.weight": bits for name, _module in iter_linear_layers(model)}
+    return {f"{name}.weight": bits for name, _module in iter_quantizable_layers(model)}
 
 
 def mixed_precision_bit_overrides(assignment: dict[str, int]) -> dict[str, float]:

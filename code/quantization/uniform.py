@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import torch
 
+from models import get_layer_weight, iter_quantizable_layers, set_layer_weight
+
 
 def quantize_tensor(weight: torch.Tensor, bits: int, per_channel: bool = True):
     qmax = 2 ** (bits - 1) - 1
@@ -18,14 +20,12 @@ def quantize_tensor(weight: torch.Tensor, bits: int, per_channel: bool = True):
     return dequant.to(weight.dtype), {"scale": scale, "bits": bits}
 
 
-def quantize_linear_layer(layer: torch.nn.Linear, bits: int, per_channel: bool = True) -> None:
-    dequant, _ = quantize_tensor(layer.weight.data, bits, per_channel)
-    layer.weight.data.copy_(dequant)
+def quantize_linear_layer(layer, bits: int, per_channel: bool = True) -> None:
+    dequant, _ = quantize_tensor(get_layer_weight(layer), bits, per_channel)
+    set_layer_weight(layer, dequant)
 
 
 def apply_uniform_quantization(model, bits: int, per_channel: bool = True):
-    for module in model.modules():
-        if isinstance(module, torch.nn.Linear):
-            quantize_linear_layer(module, bits, per_channel)
+    for _name, module in iter_quantizable_layers(model):
+        quantize_linear_layer(module, bits, per_channel)
     return model
-
