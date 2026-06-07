@@ -66,6 +66,10 @@ python code/experiments/run_all_methods.py
 
 ```powershell
 python code/experiments/run_resource_sweep.py
+python code/experiments/run_resource_sweep.py --budget-ratios 0.25,0.35,0.50,0.75,1.00
 ```
 
-当前 `run_resource_sweep.py` 还是占位入口，后续用于在不同显存预算下重复运行 mixed-precision 实验。
+`run_resource_sweep.py` 会在不同 Linear-layer 显存预算下重复运行 sensitivity-aware mixed precision，输出：
+
+- `results/tables/resource_sweep.csv`
+- `results/figures/resource_sweep_pareto.png`
