@@ -7,6 +7,7 @@ RESULTS_DIR = ROOT / "results"
 TABLES_DIR = RESULTS_DIR / "tables"
 FIGURES_DIR = RESULTS_DIR / "figures"
 MODELS_DIR = ROOT / "models"
+DATA_DIR = ROOT / "data"
 
 
 @dataclass
@@ -15,6 +16,7 @@ class ExperimentConfig:
     model_path: str | None = None
     dataset_name: str = "wikitext"
     dataset_config: str = "wikitext-2-raw-v1"
+    dataset_path: str | None = None
     text_field: str = "text"
     calibration_samples: int = 64
     evaluation_samples: int = 128
@@ -45,3 +47,7 @@ def ensure_result_dirs() -> None:
 
 def ensure_model_dir() -> None:
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def ensure_data_dir() -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)

@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
-def load_causal_lm(model_name_or_path: str, device: str = "cpu", local_files_only: bool = False):
+def load_causal_lm(model_name_or_path: str, device: str = "cpu"):
+    local_files_only = Path(model_name_or_path).exists()
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, local_files_only=local_files_only)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token

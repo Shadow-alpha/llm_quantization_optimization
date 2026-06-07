@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import torch
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 
 
-def load_text_splits(dataset_name: str, dataset_config: str, text_field: str):
-    dataset = load_dataset(dataset_name, dataset_config)
+def load_text_splits(dataset_name: str, dataset_config: str, text_field: str, dataset_path: str | None = None):
+    dataset = load_from_disk(dataset_path) if dataset_path else load_dataset(dataset_name, dataset_config)
     train = [x[text_field] for x in dataset["train"] if x[text_field].strip()]
     test = [x[text_field] for x in dataset["test"] if x[text_field].strip()]
     return train, test
@@ -48,4 +48,3 @@ def collect_linear_inputs(model, batches, max_batches: int = 16):
         hook.remove()
 
     return {name: torch.cat(values, dim=0) for name, values in caches.items()}
-

@@ -51,7 +51,8 @@ def main():
 
     print(f"Saved model and tokenizer to: {output.resolve()}")
     print("Use it with:")
-    print(f"python code/main.py --model-path {output} --local-files-only --method uniform --bits 8")
+    print(f"python code/main.py --model-path {output} --method uniform --bits 8")
+
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument("--method", default="uniform")
     parser.add_argument("--bits", type=int, default=8)
     parser.add_argument("--model-path", default=None, help="Local model directory. Overrides config.model_name.")
-    parser.add_argument("--local-files-only", action="store_true", help="Load model/tokenizer without network access.")
+    parser.add_argument("--dataset-path", default=None, help="Local dataset directory saved by code/download_dataset.py.")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
 
@@ -55,6 +55,8 @@ def main():
     config = ExperimentConfig()
     if args.model_path:
         config.model_path = args.model_path
+    if args.dataset_path:
+        config.dataset_path = args.dataset_path
     ensure_result_dirs()
 
     if args.dry_run:
@@ -67,8 +69,13 @@ def main():
     from models import estimate_parameter_memory_mb, load_causal_lm
 
     model_source = config.model_path or config.model_name
-    model, tokenizer = load_causal_lm(model_source, config.device, local_files_only=args.local_files_only)
-    train_texts, test_texts = load_text_splits(config.dataset_name, config.dataset_config, config.text_field)
+    model, tokenizer = load_causal_lm(model_source, config.device)
+    train_texts, test_texts = load_text_splits(
+        config.dataset_name,
+        config.dataset_config,
+        config.text_field,
+        config.dataset_path,
+    )
     calibration = tokenize_texts(tokenizer, train_texts, config.max_length, config.calibration_samples, config.device)
     evaluation = tokenize_texts(tokenizer, test_texts, config.max_length, config.evaluation_samples, config.device)
 

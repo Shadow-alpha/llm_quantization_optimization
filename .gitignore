@@ -21,6 +21,10 @@ results/figures/*
 models/*
 !models/.gitkeep
 
+# Downloaded datasets
+data/*
+!data/.gitkeep
+
 # OS/editor files
 .DS_Store
 Thumbs.db

@@ -28,9 +28,9 @@ python code/experiments/run_all_methods.py
 python code/experiments/run_resource_sweep.py
 ```
 
-## 下载模型到本地
+## 下载模型和数据集到本地
 
-如果服务器无法直接访问 HuggingFace，可以先通过镜像下载模型到 `models/`，之后所有实验都从本地路径加载。
+如果服务器无法直接访问 HuggingFace，可以先通过镜像下载模型到 `models/`、数据集到 `data/`，之后实验都从本地路径加载。
 
 ```powershell
 # 使用 HuggingFace 镜像下载 distilgpt2
@@ -40,12 +40,21 @@ python code/download_model.py --model distilgpt2 --mirror https://hf-mirror.com
 python code/download_model.py --model distilgpt2 --output models/distilgpt2 --mirror https://hf-mirror.com
 ```
 
-下载完成后，用 `--model-path` 指向本地目录。`--local-files-only` 会禁止 transformers 再访问网络。
+下载 WikiText-2 数据集：
 
 ```powershell
-python code/main.py --model-path models/distilgpt2 --local-files-only --method uniform --bits 8
-python code/experiments/run_all_methods.py --model-path models/distilgpt2 --local-files-only
-python code/experiments/run_resource_sweep.py --model-path models/distilgpt2 --local-files-only
+python code/download_dataset.py --dataset wikitext --config wikitext-2-raw-v1 --mirror https://hf-mirror.com
+
+# 或者手动指定输出目录
+python code/download_dataset.py --dataset wikitext --config wikitext-2-raw-v1 --output data/wikitext-2-raw-v1 --mirror https://hf-mirror.com
+```
+
+下载完成后，用 `--model-path` 和 `--dataset-path` 指向本地目录。只要路径存在，代码会自动按本地文件加载。
+
+```powershell
+python code/main.py --model-path models/distilgpt2 --dataset-path data/wikitext-2-raw-v1 --method uniform --bits 8
+python code/experiments/run_all_methods.py --model-path models/distilgpt2 --dataset-path data/wikitext-2-raw-v1
+python code/experiments/run_resource_sweep.py --model-path models/distilgpt2 --dataset-path data/wikitext-2-raw-v1
 ```
 
 也可以在 shell 中统一设置镜像端点：
@@ -53,11 +62,10 @@ python code/experiments/run_resource_sweep.py --model-path models/distilgpt2 --l
 ```powershell
 $env:HF_ENDPOINT = "https://hf-mirror.com"
 python code/download_model.py --model distilgpt2 --output models/distilgpt2
+python code/download_dataset.py --dataset wikitext --config wikitext-2-raw-v1 --output data/wikitext-2-raw-v1
 ```
 
-`models/` 下的实际模型权重会被 `.gitignore` 忽略，不会上传到 GitHub。
-
-注意：实验默认数据集是 WikiText-2，首次运行仍可能需要通过 HuggingFace datasets 下载数据。若数据集也无法直连，可以在运行实验前保留同一个 `HF_ENDPOINT` 环境变量。
+`models/` 和 `data/` 下的实际文件会被 `.gitignore` 忽略，不会上传到 GitHub。
 
 ## 运行不同量化方法
 

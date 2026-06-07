@@ -20,7 +20,7 @@ METHODS = [
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", default=None)
-    parser.add_argument("--local-files-only", action="store_true")
+    parser.add_argument("--dataset-path", default=None)
     return parser.parse_args()
 
 
@@ -30,8 +30,8 @@ def main():
         command = [sys.executable, str(ROOT / "code" / "main.py"), "--method", method, "--bits", bits]
         if args.model_path:
             command.extend(["--model-path", args.model_path])
-        if args.local_files_only:
-            command.append("--local-files-only")
+        if args.dataset_path:
+            command.extend(["--dataset-path", args.dataset_path])
         subprocess.run(command, check=True)
 
 
