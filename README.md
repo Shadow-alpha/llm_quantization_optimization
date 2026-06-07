@@ -23,9 +23,9 @@ python code/main.py --dry-run
 `--dry-run` 只检查配置与模块是否正常导入，不下载模型。正式实验可运行：
 
 ```powershell
-python code/main.py --method uniform --bits 8
-python code/experiments/run_all_methods.py
-python code/experiments/run_resource_sweep.py
+python code/download_model.py --model distilgpt2 --output models/distilgpt2 --mirror https://hf-mirror.com
+python code/download_dataset.py --dataset Salesforce/wikitext --config wikitext-2-raw-v1 --output data/wikitext --mirror https://hf-mirror.com
+python code/main.py --model-path models/distilgpt2 --dataset-path data/wikitext --method uniform --bits 8
 ```
 
 ## 下载模型和数据集到本地
@@ -43,18 +43,18 @@ python code/download_model.py --model distilgpt2 --output models/distilgpt2 --mi
 下载 WikiText-2 数据集：
 
 ```powershell
-python code/download_dataset.py --dataset wikitext --config wikitext-2-raw-v1 --mirror https://hf-mirror.com
+python code/download_dataset.py --dataset Salesforce/wikitext --config wikitext-2-raw-v1 --mirror https://hf-mirror.com
 
 # 或者手动指定输出目录
-python code/download_dataset.py --dataset wikitext --config wikitext-2-raw-v1 --output data/wikitext-2-raw-v1 --mirror https://hf-mirror.com
+python code/download_dataset.py --dataset Salesforce/wikitext --config wikitext-2-raw-v1 --output data/wikitext --mirror https://hf-mirror.com
 ```
 
 下载完成后，用 `--model-path` 和 `--dataset-path` 指向本地目录。只要路径存在，代码会自动按本地文件加载。
 
 ```powershell
-python code/main.py --model-path models/distilgpt2 --dataset-path data/wikitext-2-raw-v1 --method uniform --bits 8
-python code/experiments/run_all_methods.py --model-path models/distilgpt2 --dataset-path data/wikitext-2-raw-v1
-python code/experiments/run_resource_sweep.py --model-path models/distilgpt2 --dataset-path data/wikitext-2-raw-v1
+python code/main.py --model-path models/distilgpt2 --dataset-path data/wikitext --method uniform --bits 8
+python code/experiments/run_all_methods.py --model-path models/distilgpt2 --dataset-path data/wikitext
+python code/experiments/run_resource_sweep.py --model-path models/distilgpt2 --dataset-path data/wikitext
 ```
 
 也可以在 shell 中统一设置镜像端点：
@@ -62,10 +62,12 @@ python code/experiments/run_resource_sweep.py --model-path models/distilgpt2 --d
 ```powershell
 $env:HF_ENDPOINT = "https://hf-mirror.com"
 python code/download_model.py --model distilgpt2 --output models/distilgpt2
-python code/download_dataset.py --dataset wikitext --config wikitext-2-raw-v1 --output data/wikitext-2-raw-v1
+python code/download_dataset.py --dataset Salesforce/wikitext --config wikitext-2-raw-v1 --output data/wikitext
 ```
 
 `models/` 和 `data/` 下的实际文件会被 `.gitignore` 忽略，不会上传到 GitHub。
+
+数据集下载脚本不会调用 `datasets.load_dataset` 解析脚本，而是直接用 `huggingface_hub` 下载 dataset repo 中的 parquet 文件；实验读取本地数据时用 pandas/pyarrow 解析 parquet。
 
 ## 运行不同量化方法
 

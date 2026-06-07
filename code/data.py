@@ -1,14 +1,53 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import torch
-from datasets import load_dataset, load_from_disk
 
 
 def load_text_splits(dataset_name: str, dataset_config: str, text_field: str, dataset_path: str | None = None):
-    dataset = load_from_disk(dataset_path) if dataset_path else load_dataset(dataset_name, dataset_config)
-    train = [x[text_field] for x in dataset["train"] if x[text_field].strip()]
-    test = [x[text_field] for x in dataset["test"] if x[text_field].strip()]
+    if dataset_path:
+        return load_text_splits_from_parquet(Path(dataset_path), text_field)
+
+    raise RuntimeError(
+        "dataset_path is required. Download parquet files first with code/download_dataset.py, "
+        "then pass --dataset-path to the experiment command."
+    )
+
+
+def load_text_splits_from_parquet(dataset_dir: Path, text_field: str):
+    train = read_parquet_split(dataset_dir, "train", text_field)
+    test = read_parquet_split(dataset_dir, "test", text_field)
+    if not test:
+        test = read_parquet_split(dataset_dir, "validation", text_field)
+    if not train or not test:
+        raise RuntimeError(
+            f"Could not find non-empty train/test text splits under {dataset_dir}. "
+            "Expected parquet filenames or parent directories to contain train/test/validation."
+        )
     return train, test
+
+
+def read_parquet_split(dataset_dir: Path, split: str, text_field: str):
+    import pandas as pd
+
+    files = find_split_parquet_files(dataset_dir, split)
+    texts = []
+    for file in files:
+        frame = pd.read_parquet(file, columns=[text_field])
+        values = frame[text_field].dropna().astype(str)
+        texts.extend(value for value in values if value.strip())
+    return texts
+
+
+def find_split_parquet_files(dataset_dir: Path, split: str):
+    split = split.lower()
+    files = sorted(dataset_dir.rglob("*.parquet"))
+    return [
+        file
+        for file in files
+        if split in file.stem.lower() or any(part.lower() == split for part in file.parts)
+    ]
 
 
 def tokenize_texts(tokenizer, texts, max_length: int, limit: int, device: str):
