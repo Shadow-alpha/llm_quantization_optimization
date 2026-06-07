@@ -16,13 +16,13 @@
 
 设某一线性层权重矩阵为
 
-$$
+```math
 W \in \mathbb{R}^{m \times n}.
-$$
+```
 
-对于给定 scale 参数 \(s > 0\)，对称均匀量化可写为
+对于给定 scale 参数 $s > 0$，对称均匀量化可写为
 
-$$
+```math
 \hat{W}
 = Q_s(W)
 = s \cdot \mathrm{clip}
@@ -30,25 +30,25 @@ $$
 \mathrm{round}\left(\frac{W}{s}\right),
 q_{\min}, q_{\max}
 \right).
-$$
+```
 
-若使用 \(b\) bit 表示，则通常有
+若使用 $b$ bit 表示，则通常有
 
-$$
+```math
 q_{\min} = -2^{b-1}, \qquad
 q_{\max} = 2^{b-1}-1.
-$$
+```
 
 最简单的 scale 选择问题可写为
 
-$$
+```math
 \min_{s>0}
 \left\|W - Q_s(W)\right\|_F^2.
-$$
+```
 
-若考虑非对称量化，引入 zero-point \(z\)，则有
+若考虑非对称量化，引入 zero-point $z$，则有
 
-$$
+```math
 \hat{W}
 = s \cdot
 \left[
@@ -59,32 +59,32 @@ q_{\min}, q_{\max}
 \right)
 - z
 \right].
-$$
+```
 
-此时需要联合选择 \((s,z)\)。进一步地，scale 可采用 per-tensor、per-channel 或 per-group 形式，不同粒度会影响量化误差和存储开销。
+此时需要联合选择 $(s,z)$。进一步地，scale 可采用 per-tensor、per-channel 或 per-group 形式，不同粒度会影响量化误差和存储开销。
 
 ## 3. 资源约束下的统一优化建模
 
-设原始模型为 \(f_W\)，量化后模型为 \(f_{Q(W;\theta)}\)，其中 \(\theta\) 表示量化策略，包括：
+设原始模型为 $f_W$，量化后模型为 $f_{Q(W;\theta)}$，其中 $\theta$ 表示量化策略，包括：
 
-- 每层 bit-width：\(b_1,\dots,b_L\)；
+- 每层 bit-width：$b_1,\dots,b_L$；
 - scale 与 zero-point；
 - per-tensor、per-channel 或 per-group 粒度；
 - activation、weight 与 KV cache 是否量化；
 - outlier 通道处理方式；
 - group size 与硬件 kernel 选择。
 
-给定校准数据集 \(D_{\mathrm{calib}}\)，可将量化部署写为：
+给定校准数据集 $D_{\mathrm{calib}}$，可将量化部署写为：
 
-$$
+```math
 \min_{\theta}
 \mathbb{E}_{x \sim D_{\mathrm{calib}}}
 \left[
 d\left(f_W(x), f_{Q(W;\theta)}(x)\right)
 \right]
-$$
+```
 
-$$
+```math
 \mathrm{s.t.}\quad
 C_{\mathrm{mem}}(\theta) \le M,
 \qquad
@@ -93,9 +93,9 @@ C_{\mathrm{lat}}(\theta) \le T,
 C_{\mathrm{energy}}(\theta) \le E,
 \qquad
 \theta \in \Theta_{\mathrm{hardware}}.
-$$
+```
 
-其中 \(d(\cdot,\cdot)\) 可取输出 logits 的均方误差、KL 散度或下游任务 loss 增量；\(C_{\mathrm{mem}}\)、\(C_{\mathrm{lat}}\)、\(C_{\mathrm{energy}}\) 分别表示显存、延迟与能耗代价；\(\Theta_{\mathrm{hardware}}\) 表示硬件支持的量化格式与 kernel 约束。
+其中 $d(\cdot,\cdot)$ 可取输出 logits 的均方误差、KL 散度或下游任务 loss 增量；$C_{\mathrm{mem}}$、$C_{\mathrm{lat}}$、$C_{\mathrm{energy}}$ 分别表示显存、延迟与能耗代价；$\Theta_{\mathrm{hardware}}$ 表示硬件支持的量化格式与 kernel 约束。
 
 该问题通常是非凸、离散、组合优化问题，难以精确求解。现有算法往往从局部二阶近似、层敏感度估计、outlier 分离、矩阵重参数化或硬件感知搜索等角度构造近似解。
 
@@ -103,93 +103,93 @@ $$
 
 普通权重量化最小化的是
 
-$$
+```math
 \left\|W-\hat{W}\right\|_F^2,
-$$
+```
 
 但在神经网络中真正影响模型输出的是
 
-$$
+```math
 XW \quad \text{与} \quad X\hat{W},
-$$
+```
 
-其中 \(X\) 表示该层输入激活。因此 GPTQ 关注的问题是
+其中 $X$ 表示该层输入激活。因此 GPTQ 关注的问题是
 
-$$
+```math
 \min_{\hat{W}\in\mathcal{Q}}
 \left\|XW - X\hat{W}\right\|_F^2.
-$$
+```
 
 展开可得
 
-$$
+```math
 \left\|X(W-\hat{W})\right\|_F^2
 =
 \mathrm{Tr}
 \left[
 (W-\hat{W})^\top X^\top X(W-\hat{W})
 \right].
-$$
+```
 
 令
 
-$$
+```math
 H = X^\top X,
-$$
+```
 
 则问题可写为
 
-$$
+```math
 \min_{\hat{W}\in\mathcal{Q}}
 \mathrm{Tr}
 \left[
 (W-\hat{W})^\top H(W-\hat{W})
 \right].
-$$
+```
 
-这里 \(H\) 可视为局部 Hessian 近似。GPTQ 的核心思想是：量化某些权重后，将产生的误差通过 Hessian 逆或近似逆传播到尚未量化的权重上，从而进行误差补偿。它体现了二阶优化信息在量化误差控制中的作用。
+这里 $H$ 可视为局部 Hessian 近似。GPTQ 的核心思想是：量化某些权重后，将产生的误差通过 Hessian 逆或近似逆传播到尚未量化的权重上，从而进行误差补偿。它体现了二阶优化信息在量化误差控制中的作用。
 
-本文代码中实现课程项目版 GPTQ-like 方法：收集每层输入激活 \(X\)，构造 \(H=X^\top X\) 的对角近似，并在 INT4 权重量化后进行局部误差补偿。
+本文代码中实现课程项目版 GPTQ-like 方法：收集每层输入激活 $X$，构造 $H=X^\top X$ 的对角近似，并在 INT4 权重量化后进行局部误差补偿。
 
 ## 5. 混合精度量化与组合优化
 
-不同层对量化误差的敏感度不同。例如 attention projection、embedding 层、LM head 或存在 outlier 的层，通常需要更高精度。设第 \(l\) 层 bit-width 为
+不同层对量化误差的敏感度不同。例如 attention projection、embedding 层、LM head 或存在 outlier 的层，通常需要更高精度。设第 $l$ 层 bit-width 为
 
-$$
+```math
 b_l \in \mathcal{B}=\{2,3,4,8,16\}.
-$$
+```
 
 混合精度量化可建模为：
 
-$$
+```math
 \min_{b_1,\dots,b_L}
 \Delta \mathrm{Acc}(b_1,\dots,b_L)
-$$
+```
 
-$$
+```math
 \mathrm{s.t.}\quad
 \sum_{l=1}^{L}
 \mathrm{Mem}_l(b_l)
 \le M,
 \qquad
 b_l \in \mathcal{B}.
-$$
+```
 
-若每层有 \(K\) 种 bit-width 选择，则搜索空间大小为 \(K^L\)，随层数指数增长。HAQ 使用强化学习搜索每层 bit-width；HAWQ 与 HAWQ-V2 使用 Hessian 或 Hessian trace 衡量层敏感度；Q-BERT 将 Hessian-based mixed-precision quantization 应用于 Transformer 模型。
+若每层有 $K$ 种 bit-width 选择，则搜索空间大小为 $K^L$，随层数指数增长。HAQ 使用强化学习搜索每层 bit-width；HAWQ 与 HAWQ-V2 使用 Hessian 或 Hessian trace 衡量层敏感度；Q-BERT 将 Hessian-based mixed-precision quantization 应用于 Transformer 模型。
 
-在本文实验中，将 HAQ、HAWQ、Q-BERT 的共同思想统一为“敏感度驱动的资源分配问题”。设第 \(l\) 层敏感度为 \(S_l\)，第 \(l\) 层使用 \(b\) bit 时的量化误差估计为 \(e_l(b)\)，则有：
+在本文实验中，将 HAQ、HAWQ、Q-BERT 的共同思想统一为“敏感度驱动的资源分配问题”。设第 $l$ 层敏感度为 $S_l$，第 $l$ 层使用 $b$ bit 时的量化误差估计为 $e_l(b)$，则有：
 
-$$
+```math
 \min_{b_1,\dots,b_L}
 \sum_{l=1}^{L}
 S_l e_l(b_l)
-$$
+```
 
-$$
+```math
 \mathrm{s.t.}\quad
 \sum_{l=1}^{L}
 \mathrm{Mem}_l(b_l) \le M.
-$$
+```
 
 该问题是多重选择背包问题。代码中提供两类求解方式：贪心算法与动态规划算法。
 
@@ -197,54 +197,54 @@ $$
 
 设量化扰动为
 
-$$
+```math
 \Delta W = \hat{W} - W.
-$$
+```
 
 在一阶项较小的假设下，loss 增量可由二阶泰勒展开近似：
 
-$$
+```math
 \Delta \mathcal{L}
 \approx
 \frac{1}{2}
 \Delta W^\top H \Delta W,
-$$
+```
 
 其中
 
-$$
+```math
 H = \nabla_W^2 \mathcal{L}(W)
-$$
+```
 
-为 Hessian 矩阵。对第 \(l\) 层有
+为 Hessian 矩阵。对第 $l$ 层有
 
-$$
+```math
 \Delta \mathcal{L}_l
 \approx
 \frac{1}{2}
 \Delta W_l^\top H_l \Delta W_l.
-$$
+```
 
-若 \(H_l\) 的特征值较大，则说明该层 loss 曲率较高，量化扰动会被放大，因此应分配更高 bit-width。实际 LLM 中直接计算 Hessian 代价很高，因此常用对角 Hessian、Hessian trace 或激活平方均值作为近似。
+若 $H_l$ 的特征值较大，则说明该层 loss 曲率较高，量化扰动会被放大，因此应分配更高 bit-width。实际 LLM 中直接计算 Hessian 代价很高，因此常用对角 Hessian、Hessian trace 或激活平方均值作为近似。
 
 本文代码采用两类敏感度估计：
 
-$$
+```math
 S_l^{\mathrm{act}}
 =
 \mathbb{E}
 \left[
 \|X_l\|_2^2
 \right],
-$$
+```
 
 以及单层量化误差近似：
 
-$$
+```math
 S_l^{\mathrm{mse}}
 =
 \left\|W_l - Q(W_l)\right\|_F^2.
-$$
+```
 
 前者对应 Hessian trace proxy，后者对应权重扰动大小。
 
@@ -254,35 +254,35 @@ LLM 权重和激活中常存在 outlier。低比特量化时，少量极端值�
 
 ### 7.1 LLM.int8
 
-LLM.int8 的思想是将普通通道使用 INT8 计算，而将 outlier 通道保留较高精度。设 outlier 通道集合为 \(S\)，则可写为：
+LLM.int8 的思想是将普通通道使用 INT8 计算，而将 outlier 通道保留较高精度。设 outlier 通道集合为 $S$，则可写为：
 
-$$
+```math
 \min_{S}
 \mathrm{Err}(S)
 \qquad
 \mathrm{s.t.}
 \quad |S|\le k.
-$$
+```
 
-实际实现中可根据 activation 最大值或绝对值阈值确定 \(S\)。本文代码中的 LLM.int8-like 方法检测 activation outlier，将普通通道量化为 INT8，outlier 通道保留原精度。
+实际实现中可根据 activation 最大值或绝对值阈值确定 $S$。本文代码中的 LLM.int8-like 方法检测 activation outlier，将普通通道量化为 INT8，outlier 通道保留原精度。
 
 ### 7.2 SmoothQuant
 
 SmoothQuant 使用矩阵重参数化：
 
-$$
+```math
 Y = XW = (XS)(S^{-1}W),
-$$
+```
 
-其中 \(S\) 为对角缩放矩阵。该变换不改变浮点计算结果，但可将 activation 中的 outlier 平滑转移到 weight 中，使 activation 和 weight 都更易量化。对应优化问题为：
+其中 $S$ 为对角缩放矩阵。该变换不改变浮点计算结果，但可将 activation 中的 outlier 平滑转移到 weight 中，使 activation 和 weight 都更易量化。对应优化问题为：
 
-$$
+```math
 \min_S
 \mathrm{Err}
 \left(
 Q(XS), Q(S^{-1}W)
 \right).
-$$
+```
 
 本文代码实现 SmoothQuant-like 权重侧近似，根据 activation max 与 weight max 构造缩放系数，并观察 W8A8 量化误差变化。
 
@@ -290,12 +290,12 @@ $$
 
 AWQ 认为并非所有权重同等重要，activation 较大的通道对输出影响更显著。因此 AWQ 根据 activation 统计量选择重要通道或进行缩放保护。其核心目标可以写为：
 
-$$
+```math
 \min_s
 \left\|
 XW - XQ(W \odot s) \odot s^{-1}
 \right\|_F^2.
-$$
+```
 
 本文代码中的 AWQ-like 方法使用 activation mean 构造 channel scaling，对重要通道进行量化保护。
 
@@ -303,16 +303,16 @@ $$
 
 ZeroQuant 强调面向 Transformer 的高效后训练量化流程，包括权重量化、激活量化、分组量化以及逐层校准。其工程意义在于将多个局部量化步骤组织为端到端部署流程。
 
-本文代码中实现 ZeroQuant-like 的 group-wise weight quantization。设 group size 为 \(g\)，则对每组权重分别选择 scale：
+本文代码中实现 ZeroQuant-like 的 group-wise weight quantization。设 group size 为 $g$，则对每组权重分别选择 scale：
 
-$$
+```math
 \hat{W}_{:,G}
 =
 Q_{s_G}
 (W_{:,G}),
 \qquad
 |G|=g.
-$$
+```
 
 相比 per-tensor 量化，group-wise 量化可以降低局部范围差异造成的误差，但需要存储更多 scale 参数。
 
@@ -320,7 +320,7 @@ $$
 
 LLM 部署不仅追求最低精度损失，还需要同时考虑显存、延迟和能耗。因此更完整的形式是多目标优化：
 
-$$
+```math
 \min_{\theta}
 \left(
 \Delta \mathrm{Acc}(\theta),
@@ -328,9 +328,9 @@ C_{\mathrm{mem}}(\theta),
 C_{\mathrm{lat}}(\theta),
 C_{\mathrm{energy}}(\theta)
 \right).
-$$
+```
 
-通常不存在一个策略在所有指标上同时最优，因此需要考虑 Pareto 最优。若不存在另一个策略 \(\theta'\) 满足所有目标均不差且至少一个目标更优，则称 \(\theta\) 为 Pareto 最优解。
+通常不存在一个策略在所有指标上同时最优，因此需要考虑 Pareto 最优。若不存在另一个策略 $\theta'$ 满足所有目标均不差且至少一个目标更优，则称 $\theta$ 为 Pareto 最优解。
 
 实验中将收集不同算法在 memory、latency、perplexity 上的结果，并绘制 Pareto 前沿，用于分析在给定部署约束下应选择何种量化策略。
 
@@ -341,8 +341,8 @@ $$
 | Uniform Quantization | scale、bit-width | 最小化权重重构误差 | 局部离散近似 |
 | GPTQ | quantized weight | 使用二阶信息补偿量化误差 | Hessian 加权最小二乘 |
 | AWQ | channel scale | 保护 activation 重要通道 | activation-aware scaling |
-| SmoothQuant | 平滑矩阵 \(S\) | 将 activation outlier 转移到 weight | 矩阵重参数化 |
-| LLM.int8 | outlier 集合 \(S\) | outlier 高精度、普通通道 INT8 | 稀疏异常值分离 |
+| SmoothQuant | 平滑矩阵 $S$ | 将 activation outlier 转移到 weight | 矩阵重参数化 |
+| LLM.int8 | outlier 集合 $S$ | outlier 高精度、普通通道 INT8 | 稀疏异常值分离 |
 | HAQ | 每层 bit-width | 硬件感知自动搜索 | 资源约束策略搜索 |
 | HAWQ / HAWQ-V2 | 每层 bit-width | Hessian / trace 衡量敏感度 | 二阶敏感度分配 |
 | Q-BERT | group-wise bit-width | Transformer 混合精度 | Hessian-based MPQ |
@@ -371,7 +371,7 @@ $$
 
 主要评价指标包括：
 
-$$
+```math
 \mathrm{Perplexity}
 =
 \exp
@@ -380,18 +380,18 @@ $$
 \sum_{i=1}^{N}
 \mathcal{L}_i
 \right),
-$$
+```
 
 以及模型参数显存估计：
 
-$$
+```math
 C_{\mathrm{mem}}
 =
 \sum_{l=1}^{L}
 \frac{N_l b_l}{8},
-$$
+```
 
-其中 \(N_l\) 为第 \(l\) 层参数量，\(b_l\) 为该层 bit-width。
+其中 $N_l$ 为第 $l$ 层参数量，$b_l$ 为该层 bit-width。
 
 推理延迟通过固定 batch 和 sequence length 下的平均前向传播时间估计。
 
