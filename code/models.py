@@ -1,0 +1,33 @@
+from __future__ import annotations
+
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+
+def load_causal_lm(model_name: str, device: str = "cpu"):
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    dtype = torch.float16 if device.startswith("cuda") else torch.float32
+    model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype)
+    model.to(device)
+    model.eval()
+    return model, tokenizer
+
+
+def iter_linear_layers(model):
+    for name, module in model.named_modules():
+        if isinstance(module, torch.nn.Linear):
+            yield name, module
+
+
+def estimate_parameter_memory_mb(model, bit_overrides: dict[str, int] | None = None) -> float:
+    bit_overrides = bit_overrides or {}
+    total_bits = 0
+    for name, param in model.named_parameters():
+        layer_name = name.rsplit(".", 1)[0]
+        bits = bit_overrides.get(layer_name, param.element_size() * 8)
+        total_bits += param.numel() * bits
+    return total_bits / 8 / 1024 / 1024
+

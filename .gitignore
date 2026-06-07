@@ -1,0 +1,25 @@
+# Local report source artifact
+llm_quantization_optimization_report.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local experiment outputs
+results/tables/*
+results/figures/*
+!results/tables/.gitkeep
+!results/figures/.gitkeep
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
