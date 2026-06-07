@@ -50,6 +50,20 @@ def apply_method(method, model, activation_cache, config, bits):
     raise ValueError(f"Unknown method: {method}")
 
 
+def memory_bit_overrides(method, model, metadata, bits):
+    from models import linear_weight_bit_overrides, mixed_precision_bit_overrides
+
+    if method == "mixed_precision":
+        return mixed_precision_bit_overrides(metadata)
+    if method == "llm_int8_like":
+        overrides = {}
+        for name, outlier_ratio in metadata.items():
+            effective_bits = 8 * (1 - outlier_ratio) + 16 * outlier_ratio
+            overrides[f"{name}.weight"] = effective_bits
+        return overrides
+    return linear_weight_bit_overrides(model, bits)
+
+
 def main():
     args = parse_args()
     config = ExperimentConfig()
@@ -83,6 +97,7 @@ def main():
         "method": "fp",
         "bits": 16,
         "memory_mb": estimate_parameter_memory_mb(model),
+        "actual_tensor_memory_mb": estimate_parameter_memory_mb(model),
         "latency_ms": measure_latency_ms(model, evaluation),
         **evaluate_perplexity(model, evaluation),
     }
@@ -90,10 +105,12 @@ def main():
     activation_cache = collect_linear_inputs(model, calibration)
     quantized = copy.deepcopy(model)
     quantized, metadata = apply_method(args.method, quantized, activation_cache, config, args.bits)
+    bit_overrides = memory_bit_overrides(args.method, quantized, metadata, args.bits)
     result = {
         "method": args.method,
         "bits": args.bits,
-        "memory_mb": estimate_parameter_memory_mb(quantized),
+        "memory_mb": estimate_parameter_memory_mb(quantized, bit_overrides),
+        "actual_tensor_memory_mb": estimate_parameter_memory_mb(quantized),
         "latency_ms": measure_latency_ms(quantized, evaluation),
         **evaluate_perplexity(quantized, evaluation),
         "metadata": str(metadata),

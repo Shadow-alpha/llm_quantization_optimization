@@ -29,11 +29,19 @@ def iter_linear_layers(model):
             yield name, module
 
 
-def estimate_parameter_memory_mb(model, bit_overrides: dict[str, int] | None = None) -> float:
+def estimate_parameter_memory_mb(model, bit_overrides: dict[str, float] | None = None) -> float:
     bit_overrides = bit_overrides or {}
     total_bits = 0
     for name, param in model.named_parameters():
         layer_name = name.rsplit(".", 1)[0]
-        bits = bit_overrides.get(layer_name, param.element_size() * 8)
+        bits = bit_overrides.get(name, bit_overrides.get(layer_name, param.element_size() * 8))
         total_bits += param.numel() * bits
     return total_bits / 8 / 1024 / 1024
+
+
+def linear_weight_bit_overrides(model, bits: float) -> dict[str, float]:
+    return {f"{name}.weight": bits for name, _module in iter_linear_layers(model)}
+
+
+def mixed_precision_bit_overrides(assignment: dict[str, int]) -> dict[str, float]:
+    return {f"{name}.weight": bits for name, bits in assignment.items()}

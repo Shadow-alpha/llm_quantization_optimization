@@ -83,7 +83,7 @@ def main():
 
     from data import collect_linear_inputs, load_text_splits, tokenize_texts
     from evaluate import evaluate_perplexity, measure_latency_ms
-    from models import load_causal_lm
+    from models import estimate_parameter_memory_mb, load_causal_lm, mixed_precision_bit_overrides
     from optimization.pareto import pareto_frontier
     from quantization.mixed_precision import apply_mixed_precision
     from quantization.sensitivity import hessian_trace_proxy
@@ -114,12 +114,15 @@ def main():
             sensitivity,
             budget_mb,
         )
+        bit_overrides = mixed_precision_bit_overrides(assignment)
         metrics = evaluate_perplexity(quantized, evaluation)
         row = {
             "method": "mixed_precision",
             "budget_ratio": ratio,
             "budget_mb": budget_mb,
             "linear_memory_mb": assignment_memory_mb(model, assignment),
+            "model_memory_mb": estimate_parameter_memory_mb(model, bit_overrides),
+            "actual_tensor_memory_mb": estimate_parameter_memory_mb(quantized),
             "latency_ms": measure_latency_ms(quantized, evaluation),
             "bit_summary": summarize_assignment(assignment),
             "assignment": str(assignment),
@@ -135,7 +138,7 @@ def main():
     points = [
         {
             "method": f"mp-{row['budget_ratio']:.2f}",
-            "memory_mb": row["linear_memory_mb"],
+            "memory_mb": row["model_memory_mb"],
             "perplexity": row["perplexity"],
         }
         for row in rows

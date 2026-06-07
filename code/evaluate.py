@@ -19,6 +19,8 @@ def evaluate_perplexity(model, batches) -> dict[str, float]:
 
 @torch.no_grad()
 def measure_latency_ms(model, batches, warmup: int = 2, repeat: int = 5) -> float:
+    if not batches:
+        raise ValueError("At least one batch is required to measure latency.")
     sample = batches[0]
     for _ in range(warmup):
         model(**sample)
@@ -31,4 +33,3 @@ def measure_latency_ms(model, batches, warmup: int = 2, repeat: int = 5) -> floa
     if next(model.parameters()).is_cuda:
         torch.cuda.synchronize()
     return (time.perf_counter() - start) * 1000 / repeat
-

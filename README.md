@@ -73,6 +73,8 @@ python code/download_dataset.py --dataset Salesforce/wikitext --config wikitext-
 
 单个方法统一通过 `code/main.py` 运行，结果会保存到 `results/tables/`。
 
+结果中的 `memory_mb` 是按目标 bit-width 估算的量化存储显存；`actual_tensor_memory_mb` 是当前 fake-quant 实现中 PyTorch 张量的真实占用。`latency_ms` 测量的是当前 PyTorch 前向传播时间，由于代码没有使用真实 INT4/INT8 kernel，它主要用于同一实现下的粗略对比，不代表硬件量化 kernel 的真实加速。
+
 ```powershell
 # Uniform weight quantization
 python code/main.py --method uniform --bits 8
