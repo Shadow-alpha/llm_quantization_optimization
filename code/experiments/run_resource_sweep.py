@@ -21,6 +21,8 @@ def parse_args():
         default="0.25,0.35,0.50,0.75,1.00",
         help="Comma-separated ratios of the 16-bit Linear-layer memory budget.",
     )
+    parser.add_argument("--model-path", default=None, help="Local model directory. Overrides config.model_name.")
+    parser.add_argument("--local-files-only", action="store_true", help="Load model/tokenizer without network access.")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
 
@@ -64,6 +66,8 @@ def summarize_assignment(assignment: dict[str, int]) -> str:
 def main():
     args = parse_args()
     config = ExperimentConfig()
+    if args.model_path:
+        config.model_path = args.model_path
     budget_ratios = parse_budget_ratios(args.budget_ratios)
     ensure_result_dirs()
 
@@ -83,7 +87,8 @@ def main():
     from quantization.sensitivity import hessian_trace_proxy
     from utils.plotting import plot_pareto
 
-    model, tokenizer = load_causal_lm(config.model_name, config.device)
+    model_source = config.model_path or config.model_name
+    model, tokenizer = load_causal_lm(model_source, config.device, local_files_only=args.local_files_only)
     train_texts, test_texts = load_text_splits(config.dataset_name, config.dataset_config, config.text_field)
     calibration = tokenize_texts(tokenizer, train_texts, config.max_length, config.calibration_samples, config.device)
     evaluation = tokenize_texts(tokenizer, test_texts, config.max_length, config.evaluation_samples, config.device)

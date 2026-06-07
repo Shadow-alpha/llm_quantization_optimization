@@ -4,13 +4,17 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
-def load_causal_lm(model_name: str, device: str = "cpu"):
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+def load_causal_lm(model_name_or_path: str, device: str = "cpu", local_files_only: bool = False):
+    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, local_files_only=local_files_only)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
     dtype = torch.float16 if device.startswith("cuda") else torch.float32
-    model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name_or_path,
+        torch_dtype=dtype,
+        local_files_only=local_files_only,
+    )
     model.to(device)
     model.eval()
     return model, tokenizer
@@ -30,4 +34,3 @@ def estimate_parameter_memory_mb(model, bit_overrides: dict[str, int] | None = N
         bits = bit_overrides.get(layer_name, param.element_size() * 8)
         total_bits += param.numel() * bits
     return total_bits / 8 / 1024 / 1024
-

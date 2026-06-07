@@ -17,9 +17,12 @@ results/figures/*
 !results/tables/.gitkeep
 !results/figures/.gitkeep
 
+# Downloaded model weights
+models/*
+!models/.gitkeep
+
 # OS/editor files
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-

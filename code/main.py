@@ -14,6 +14,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--method", default="uniform")
     parser.add_argument("--bits", type=int, default=8)
+    parser.add_argument("--model-path", default=None, help="Local model directory. Overrides config.model_name.")
+    parser.add_argument("--local-files-only", action="store_true", help="Load model/tokenizer without network access.")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
 
@@ -51,6 +53,8 @@ def apply_method(method, model, activation_cache, config, bits):
 def main():
     args = parse_args()
     config = ExperimentConfig()
+    if args.model_path:
+        config.model_path = args.model_path
     ensure_result_dirs()
 
     if args.dry_run:
@@ -62,7 +66,8 @@ def main():
     from evaluate import evaluate_perplexity, measure_latency_ms
     from models import estimate_parameter_memory_mb, load_causal_lm
 
-    model, tokenizer = load_causal_lm(config.model_name, config.device)
+    model_source = config.model_path or config.model_name
+    model, tokenizer = load_causal_lm(model_source, config.device, local_files_only=args.local_files_only)
     train_texts, test_texts = load_text_splits(config.dataset_name, config.dataset_config, config.text_field)
     calibration = tokenize_texts(tokenizer, train_texts, config.max_length, config.calibration_samples, config.device)
     evaluation = tokenize_texts(tokenizer, test_texts, config.max_length, config.evaluation_samples, config.device)

@@ -6,11 +6,13 @@ ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT / "results"
 TABLES_DIR = RESULTS_DIR / "tables"
 FIGURES_DIR = RESULTS_DIR / "figures"
+MODELS_DIR = ROOT / "models"
 
 
 @dataclass
 class ExperimentConfig:
     model_name: str = "distilgpt2"
+    model_path: str | None = None
     dataset_name: str = "wikitext"
     dataset_config: str = "wikitext-2-raw-v1"
     text_field: str = "text"
@@ -40,3 +42,6 @@ def ensure_result_dirs() -> None:
     TABLES_DIR.mkdir(parents=True, exist_ok=True)
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
+
+def ensure_model_dir() -> None:
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)

@@ -28,6 +28,37 @@ python code/experiments/run_all_methods.py
 python code/experiments/run_resource_sweep.py
 ```
 
+## 下载模型到本地
+
+如果服务器无法直接访问 HuggingFace，可以先通过镜像下载模型到 `models/`，之后所有实验都从本地路径加载。
+
+```powershell
+# 使用 HuggingFace 镜像下载 distilgpt2
+python code/download_model.py --model distilgpt2 --mirror https://hf-mirror.com
+
+# 或者手动指定输出目录
+python code/download_model.py --model distilgpt2 --output models/distilgpt2 --mirror https://hf-mirror.com
+```
+
+下载完成后，用 `--model-path` 指向本地目录。`--local-files-only` 会禁止 transformers 再访问网络。
+
+```powershell
+python code/main.py --model-path models/distilgpt2 --local-files-only --method uniform --bits 8
+python code/experiments/run_all_methods.py --model-path models/distilgpt2 --local-files-only
+python code/experiments/run_resource_sweep.py --model-path models/distilgpt2 --local-files-only
+```
+
+也可以在 shell 中统一设置镜像端点：
+
+```powershell
+$env:HF_ENDPOINT = "https://hf-mirror.com"
+python code/download_model.py --model distilgpt2 --output models/distilgpt2
+```
+
+`models/` 下的实际模型权重会被 `.gitignore` 忽略，不会上传到 GitHub。
+
+注意：实验默认数据集是 WikiText-2，首次运行仍可能需要通过 HuggingFace datasets 下载数据。若数据集也无法直连，可以在运行实验前保留同一个 `HF_ENDPOINT` 环境变量。
+
 ## 运行不同量化方法
 
 单个方法统一通过 `code/main.py` 运行，结果会保存到 `results/tables/`。
