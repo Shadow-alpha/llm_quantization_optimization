@@ -5,7 +5,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from config import DATA_DIR, ensure_data_dir
 

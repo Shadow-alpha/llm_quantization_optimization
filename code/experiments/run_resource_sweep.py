@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 CODE_DIR = Path(__file__).resolve().parents[1]
-sys.path.append(str(CODE_DIR))
+sys.path.insert(0, str(CODE_DIR))
 
 from config import ExperimentConfig, FIGURES_DIR, TABLES_DIR, ensure_result_dirs
 
